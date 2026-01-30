@@ -41,6 +41,13 @@ const Board = () => {
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
+     <button
+  onClick={() => window.location.href = "/dashboard"}
+  className="mb-4 text-blue-600 underline"
+>
+  ← Back to Dashboard
+</button>
+
       <h1 className="text-2xl font-bold mb-4">Todos</h1>
 
       <div className="flex mb-4">

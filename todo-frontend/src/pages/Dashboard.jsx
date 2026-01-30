@@ -1,22 +1,38 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import api from "../services/api";
-import { auth } from "../firebase";
 import { signOut } from "firebase/auth";
+import { auth } from "../firebase";
+import { useAuth } from "../context/AuthContext";
 
 const Dashboard = () => {
+  const { user } = useAuth(); // ✅ wait for auth
   const [boards, setBoards] = useState([]);
   const [title, setTitle] = useState("");
+  const [loading, setLoading] = useState(true);
 
   const fetchBoards = async () => {
-    const res = await api.get("/boards");
-    setBoards(res.data);
+    try {
+      setLoading(true);
+      const res = await api.get("/boards");
+      setBoards(res.data);
+    } catch (error) {
+      console.error("Failed to fetch boards", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const createBoard = async () => {
-    if (!title) return;
-    await api.post("/boards", { title });
-    setTitle("");
-    fetchBoards();
+    if (!title.trim()) return;
+
+    try {
+      await api.post("/boards", { title });
+      setTitle("");
+      fetchBoards();
+    } catch (error) {
+      console.error("Failed to create board", error);
+    }
   };
 
   const logout = async () => {
@@ -25,10 +41,10 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
-    (async () => {
-      await fetchBoards();
-    })();
-  }, []);
+    if (user) {
+      fetchBoards();
+    }
+  }, [user]);
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
@@ -42,7 +58,7 @@ const Dashboard = () => {
         </button>
       </div>
 
-      <div className="flex mb-4">
+      <div className="flex mb-6">
         <input
           className="border p-2 flex-1 mr-2 rounded"
           placeholder="New board title"
@@ -57,18 +73,23 @@ const Dashboard = () => {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-  {boards.map((board) => (
-    <div
-      key={board._id}
-      onClick={() => window.location.href = `/board/${board._id}`}
-      className="bg-white p-4 rounded shadow cursor-pointer hover:bg-gray-50"
-    >
-      {board.title}
-    </div>
-  ))}
-</div>
+      {loading && <p className="text-gray-500">Loading boards...</p>}
 
+      {!loading && boards.length === 0 && (
+        <p className="text-gray-500">No boards yet. Create one above.</p>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {boards.map((board) => (
+          <Link
+            key={board._id}
+            to={`/board/${board._id}`}
+            className="bg-white p-4 rounded shadow hover:bg-gray-50 cursor-pointer"
+          >
+            {board.title}
+          </Link>
+        ))}
+      </div>
     </div>
   );
 };
